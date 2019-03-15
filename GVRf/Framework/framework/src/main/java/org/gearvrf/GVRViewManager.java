@@ -156,7 +156,7 @@ abstract class GVRViewManager extends GVRContext {
         final GVRCameraRig cameraRig = mMainScene.getMainCameraRig();
 
         if (null != cameraRig && (mSensoredScene == null || !mMainScene.equals(mSensoredScene))) {
-            cameraRig.resetYaw();
+            recenterPose();
             mSensoredScene = mMainScene;
             return true;
         }
