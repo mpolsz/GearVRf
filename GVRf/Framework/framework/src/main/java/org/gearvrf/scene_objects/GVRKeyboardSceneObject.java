@@ -111,7 +111,7 @@ public class GVRKeyboardSceneObject extends GVRSceneObject {
         mTextColor = textColor;
 
         if (enableHoverAnim)
-            mDefaultKeyAnimZOffset = 0.1f;
+            mDefaultKeyAnimZOffset = 0.03f;
         else
             mDefaultKeyAnimZOffset = 0.0f;
 
@@ -184,7 +184,7 @@ public class GVRKeyboardSceneObject extends GVRSceneObject {
 
     KeyEventsHandler getKeyEventsHandler() { return mKeyEventsHandler; }
 
-    private void onNewKeyboard(Keyboard keyboard, int cacheId) {
+    private void onNewKeyboard(final Keyboard keyboard, final int cacheId) {
         mKeyMeshDepthScale = 1.0f;
 
         if (keyboard.getKeys().size() > 0) {
@@ -195,15 +195,20 @@ public class GVRKeyboardSceneObject extends GVRSceneObject {
 
         mKeyMeshDepthPos = mKeyMeshDepthScale * mKeyMeshDepthSize * 0.5f + 0.02f;
 
-        GVRKeyboard newKeyboard = getGVRKeyboard(keyboard, cacheId);
+        getGVRContext().runOnTheFrameworkThread(new Runnable() {
+                                                    @Override
+                                                    public void run() {
+                                                        GVRKeyboard newKeyboard = getGVRKeyboard(keyboard, cacheId);
 
-        if (mMainKeyboard != null && mMainKeyboard.getParent() != null) {
-            removeChildObject(mMainKeyboard);
-            mEnabler.disableAll(mMainKeyboard, GVRCollider.getComponentType());
-        }
-        addChildObject(newKeyboard);
-        mMainKeyboard = newKeyboard;
-        mEnabler.enableAll(mMainKeyboard, GVRCollider.getComponentType());
+                                                        if (mMainKeyboard != null && mMainKeyboard.getParent() != null) {
+                                                            removeChildObject(mMainKeyboard);
+                                                            mEnabler.disableAll(mMainKeyboard, GVRCollider.getComponentType());
+                                                        }
+                                                        addChildObject(newKeyboard);
+                                                        mMainKeyboard = newKeyboard;
+                                                        mEnabler.enableAll(mMainKeyboard, GVRCollider.getComponentType());
+                                                    }
+                                                });
     }
 
     private GVRKeyboard getGVRKeyboard(Keyboard keyboard, int cacheId) {
@@ -216,7 +221,7 @@ public class GVRKeyboardSceneObject extends GVRSceneObject {
                 throw new UnsupportedOperationException("Creation of Keyboard layout on UI Thread!");
             }
             // Keyboard not cached yet
-            gvrKeyboard = createGVRKeyboard(keyboard, cacheId, this);
+            gvrKeyboard = createGVRKeyboard(keyboard, cacheId, GVRKeyboardSceneObject.this);
 
             mGVRKeyboardCache.put(cacheId, gvrKeyboard);
         }
@@ -231,6 +236,7 @@ public class GVRKeyboardSceneObject extends GVRSceneObject {
         final GVRMaterial material = new GVRMaterial(gvrContext, GVRMaterial.GVRShaderType.Texture.ID);
         material.setMainTexture(mKeyboardTexture);
         gvrKeyboard.getRenderData().setMaterial(material);
+        gvrKeyboard.getRenderData().setRenderingOrder(3501);
         gvrKeyboard.attachCollider(new GVRMeshCollider(gvrContext, true));
         gvrKeyboard.setName("Keyboard" + cacheId);
         for (Keyboard.Key key: keyboard.getKeys()) {
@@ -244,6 +250,7 @@ public class GVRKeyboardSceneObject extends GVRSceneObject {
             MeshUtils.scale(mesh, xscale, yscale, mKeyMeshDepthScale);
             GVRKey gvrKey = new GVRKey(gvrContext, key, mesh, mKeyBackground,
                     mTextColor);
+            gvrKey.getRenderData().setRenderingOrder(3502);
             gvrKey.getTransform().setPosition(x, y, mKeyMeshDepthPos);
             gvrKey.setHoveredOffset(mKeyMeshDepthPos, mDefaultKeyAnimZOffset);
             gvrKey.attachComponent(collider);
